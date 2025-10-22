@@ -1,6 +1,7 @@
 [versions]
 
 agp = "8.11.1"
+coreSplashscreen = "1.0.1"
 kotlin = "2.2.0"
 coreKtx = "1.16.0"
 junit = "4.13.2"
@@ -14,9 +15,12 @@ navigation = "2.9.1"
 room = "2.7.2"
 hilt = "2.56.2"
 hiltNavigationCompose = "1.2.0"
+okhttp = "5.1.0"
+
 
 [libraries]
 
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
@@ -24,6 +28,7 @@ navigation-compose = { group = "androidx.navigation", name = "navigation-compose
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version = "3.0.0" }
 retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version = "3.0.0" }
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -42,6 +47,7 @@ androidx-compose-material = { group = "androidx.wear.compose", name = "compose-m
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version = "2.5.0" }
 
 [plugins]
 
