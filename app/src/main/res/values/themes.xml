@@ -4,7 +4,7 @@
     <!-- Splash Theme -->
     <style name="Theme.MovieApp" parent="android:Theme.Material.Light.NoActionBar">
 
-        <item name="windowSplashScreenBackground">@color/Background_color</item>
+        <item name="windowSplashScreenBackground">@color/background_color</item>
 
 
         <item name="windowSplashScreenAnimatedIcon">@drawable/file</item>
@@ -16,11 +16,6 @@
         <item name="postSplashScreenTheme">@style/Theme.MovieApp.Normal</item>
     </style>
 
-    <style name="Theme.MovieApp.Normal" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- تقدر تضيف خصائص هنا -->
-<!--        <item name="colorPrimary">@color/purple_500</item>-->
-<!--        <item name="colorPrimaryVariant">@color/purple_700</item>-->
-<!--        <item name="colorOnPrimary">@color/white</item>-->
-    </style>
+    <style name="Theme.MovieApp.Normal" parent="android:Theme.Material.Light.NoActionBar"></style>
 
 </resources>

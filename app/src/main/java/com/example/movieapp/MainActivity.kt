@@ -7,47 +7,53 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.movieapp.ui.screens.HomeScreen
-import com.example.movieapp.ui.theme.MovieAppTheme
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.movieapp.data.BookmarkRepository
-import com.example.movieapp.data.local.MovieDatabase
-import com.example.movieapp.ui.components.BottomBar
-import com.example.movieapp.ui.screens.BookmarkScreen
-import com.example.movieapp.ui.screens.DetailsScreen
-import com.example.movieapp.ui.screens.SearchScreen
-import com.example.movieapp.ui.theme.Background_color
-import com.example.movieapp.viewmodel.BookmarkViewModel
+import androidx.navigation.navArgument
+import com.example.movieapp.presentation.components.BottomBar
+import com.example.movieapp.presentation.screens.BookmarkScreen
+import com.example.movieapp.presentation.screens.DetailsScreen
+import com.example.movieapp.presentation.screens.HomeScreen
+import com.example.movieapp.presentation.screens.SearchScreen
+import com.example.movieapp.presentation.theme.Background_color
+import com.example.movieapp.presentation.theme.MovieAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MovieAppTheme {
-                MainScreen()
+                MovieApp()
             }
         }
     }
 }
 
 @Composable
-fun MainScreen() {
+fun MovieApp() {
     val navController = rememberNavController()
-    val bookmarkViewModel: BookmarkViewModel = hiltViewModel()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Routes where bottom bar should be visible
+    val bottomBarRoutes = listOf("home", "search", "bookmark")
+    val showBottomBar = currentRoute in bottomBarRoutes
 
     Scaffold(
-        bottomBar = { BottomBar(navController = navController) },
+        bottomBar = {
+            if (showBottomBar) {
+                BottomBar(navController = navController)
+            }
+        },
         containerColor = Background_color
     ) { innerPadding ->
         NavHost(
@@ -56,21 +62,31 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") {
-                HomeScreen(navController)
+                HomeScreen(navController = navController)
             }
 
             composable("search") {
                 SearchScreen(navController = navController)
             }
 
-            composable("details/{movieId}") { backStackEntry ->
-                val movieId = backStackEntry.arguments?.getString("movieId")?.toInt() ?: return@composable
-                DetailsScreen(
-                    movieId = movieId,
-                    navController = navController,
-                    bookmarkViewModel = bookmarkViewModel
+            composable(
+                route = "details/{movieId}",
+                arguments = listOf(
+                    navArgument("movieId") {
+                        type = NavType.IntType
+                        defaultValue = 0
+                    }
                 )
+            ) { backStackEntry ->
+                val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
+                if (movieId > 0) {
+                    DetailsScreen(
+                        movieId = movieId,
+                        navController = navController
+                    )
+                }
             }
+
             composable("bookmark") {
                 BookmarkScreen(navController = navController)
             }
