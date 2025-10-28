@@ -75,7 +75,7 @@ It provides detailed information for each movie and the ability to save movies t
 
 1. **Clone the repository:**
     ```bash
-    git clone https://github.com/YOUR_USERNAME/MovieApp.git
+    git clone https://github.com/MohamedAta575/MovieApp.git
     ```
 
 2. **Add your API Key:**
