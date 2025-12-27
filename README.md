@@ -43,10 +43,11 @@ It provides detailed information for each movie and the ability to save movies t
 | Home & Popular Movies | Movie Details & Favorites |
 | :----------------------: | :-----------------------: |
 | ![Screenshot 1](images/screenshot1.png) | ![Screenshot 2](images/screenshot2.png) |
-| ![Screenshot 3](images/screenshot3.png) | ![Screenshot 4](images/screenshot4.png) |
-| ![Screenshot 5](images/screenshot5.png) | ![Screenshot 6](images/screenshot6.png) |
-| ![Screenshot 7](images/screenshot7.png) | ![Screenshot 8](images/screenshot8.png) |
-| ![Screenshot 9](images/screenshot9.png) | |
+| ![Screenshot 3](images/screenshot3.png) |![Screenshot 11](images/screenshot11.png)|
+| ![Screenshot 4](images/screenshot4.png) | ![Screenshot 5](images/screenshot5.png) |
+| ![Screenshot 6](images/screenshot6.png) | ![Screenshot 7](images/screenshot7.png) |
+| ![Screenshot 8](images/screenshot8.png) | ![Screenshot 9](images/screenshot9.png) |
+| ![Screenshot 10](images/screenshot10.png) | 
 
 ---
 
