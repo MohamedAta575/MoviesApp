@@ -89,9 +89,4 @@ It provides detailed information for each movie and the ability to save movies t
 3. **Run the App:**
     * Open the project in Android Studio, sync Gradle, and run it on a device or emulator.
 
----
 
-## 📜 License
-
-Distributed under the **MIT License**.  
-See the [LICENSE](https://github.com/YOUR_USERNAME/MovieApp/blob/main/LICENSE) file for more information.
