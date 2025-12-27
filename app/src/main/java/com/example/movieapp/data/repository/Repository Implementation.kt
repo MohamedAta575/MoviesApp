@@ -6,6 +6,7 @@ import com.example.movieapp.data.network.MovieApiService
 import com.example.movieapp.domain.model.Cast
 import com.example.movieapp.domain.model.Movie
 import com.example.movieapp.domain.model.MovieReview
+import com.example.movieapp.domain.model.MovieVideo
 import com.example.movieapp.domain.repository.IMovieRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,10 @@ import javax.inject.Singleton
 class MovieRepositoryImpl @Inject constructor(
     private val apiService: MovieApiService
 ) : IMovieRepository {
+
+    companion object {
+        private const val MAX_SEARCH_RESULTS = 20
+    }
 
     override fun getPopularMovies(): Flow<Result<List<Movie>>> = flow {
         emit(Result.Loading)
@@ -62,8 +67,18 @@ class MovieRepositoryImpl @Inject constructor(
     override fun searchMovies(query: String): Flow<Result<List<Movie>>> = flow {
         emit(Result.Loading)
         try {
-            val response = apiService.searchMovies(query)
-            emit(Result.Success(response.results.map { it.toDomain() }))
+            val cleanQuery = query.trim()
+            if (cleanQuery.isEmpty()) {
+                emit(Result.Success(emptyList()))
+                return@flow
+            }
+
+            val response = apiService.searchMovies(cleanQuery)
+            val limitedResults = response.results
+                .take(MAX_SEARCH_RESULTS)
+                .map { it.toDomain() }
+
+            emit(Result.Success(limitedResults))
         } catch (e: Exception) {
             emit(Result.Error(e))
         }
@@ -94,6 +109,21 @@ class MovieRepositoryImpl @Inject constructor(
         try {
             val response = apiService.getMovieReviews(movieId)
             emit(Result.Success(response.results.map { it.toDomain() }))
+        } catch (e: Exception) {
+            emit(Result.Error(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    override fun getMovieVideos(movieId: Int): Flow<Result<List<MovieVideo>>> = flow {
+        emit(Result.Loading)
+        try {
+            val response = apiService.getMovieVideos(movieId)
+            val videos = response.results
+                .filter { it.site.equals("YouTube", ignoreCase = true) }
+                .sortedByDescending { it.type.equals("Trailer", ignoreCase = true) }
+                .take(10)
+                .map { it.toDomain() }
+            emit(Result.Success(videos))
         } catch (e: Exception) {
             emit(Result.Error(e))
         }

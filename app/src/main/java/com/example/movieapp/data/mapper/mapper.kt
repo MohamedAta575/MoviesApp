@@ -4,10 +4,12 @@ import com.example.movieapp.data.local.BookmarkedMovieEntity
 import com.example.movieapp.data.model.CastMember
 import com.example.movieapp.data.model.MovieDetails
 import com.example.movieapp.data.model.Review
+import com.example.movieapp.data.model.Video
 import com.example.movieapp.domain.model.BookmarkedMovie
 import com.example.movieapp.domain.model.Cast
 import com.example.movieapp.domain.model.Movie
 import com.example.movieapp.domain.model.MovieReview
+import com.example.movieapp.domain.model.MovieVideo
 
 // ========== Data to Domain ==========
 
@@ -73,5 +75,15 @@ fun BookmarkedMovie.toEntity(): BookmarkedMovieEntity {
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate,
         runtime = this.runtime
+    )
+}
+fun Video.toDomain(): MovieVideo {
+    return MovieVideo(
+        id = this.id,
+        key = this.key,
+        name = this.name,
+        site = this.site,
+        type = this.type,
+        isOfficial = this.official
     )
 }

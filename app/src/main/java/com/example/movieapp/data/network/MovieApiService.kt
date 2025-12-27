@@ -4,6 +4,7 @@ import com.example.movieapp.data.model.CreditsResponse
 import com.example.movieapp.data.model.MovieDetails
 import com.example.movieapp.data.model.MovieResponse
 import com.example.movieapp.data.model.ReviewsResponse
+import com.example.movieapp.data.model.VideosResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -49,4 +50,10 @@ interface MovieApiService {
         @Query("language") language: String = "en-US",
         @Query("page") page: Int = 1
     ): ReviewsResponse
+
+    @GET("movie/{movie_id}/videos")
+    suspend fun getMovieVideos(
+        @Path("movie_id") movieId: Int,
+        @Query("language") language: String = "en-US"
+    ): VideosResponse
 }

@@ -54,3 +54,17 @@ data class MovieDetails(
 
     val runtime: Int? = null
 )
+
+data class Video(
+    val id: String,
+    val key: String,
+    val name: String,
+    val site: String,
+    val type: String,
+    @SerializedName("official")
+    val official: Boolean = false
+)
+
+data class VideosResponse(
+    val results: List<Video>
+)

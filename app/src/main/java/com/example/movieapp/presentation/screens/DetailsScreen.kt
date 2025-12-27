@@ -3,6 +3,7 @@ package com.example.movieapp.presentation.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -40,6 +41,8 @@ import com.example.movieapp.presentation.screens.components.ErrorStateView
 import com.example.movieapp.presentation.theme.*
 import com.example.movieapp.presentation.viewmodel.BookmarkViewModel
 import com.example.movieapp.presentation.viewmodel.MovieDetailsViewModel
+import android.content.Intent
+import android.net.Uri
 
 @Composable
 fun DetailsScreen(
@@ -51,6 +54,7 @@ fun DetailsScreen(
     val movieDetailsState by detailsViewModel.movieDetails.collectAsState()
     val reviewsState by detailsViewModel.reviews.collectAsState()
     val castState by detailsViewModel.cast.collectAsState()
+    val videosState by detailsViewModel.videos.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     val isBookmarked by bookmarkViewModel.isBookmarked(movieId).collectAsState()
@@ -73,6 +77,7 @@ fun DetailsScreen(
                     movie = movie,
                     reviewsState = reviewsState,
                     castState = castState,
+                    videosState = videosState,
                     isBookmarked = isBookmarked,
                     selectedTabIndex = selectedTabIndex,
                     onTabIndexChanged = { selectedTabIndex = it },
@@ -107,6 +112,7 @@ fun MovieDetailsContent(
     movie: MovieUi,
     reviewsState: UiState<List<com.example.movieapp.domain.model.MovieReview>>,
     castState: UiState<List<com.example.movieapp.domain.model.Cast>>,
+    videosState: UiState<List<com.example.movieapp.domain.model.MovieVideo>>,
     isBookmarked: Boolean,
     selectedTabIndex: Int,
     onTabIndexChanged: (Int) -> Unit,
@@ -114,6 +120,7 @@ fun MovieDetailsContent(
     onBookmarkClick: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -264,6 +271,7 @@ fun MovieDetailsContent(
                 0 -> AboutMovieSection(movie.overview)
                 1 -> ReviewsSection(reviewsState)
                 2 -> CastSection(castState)
+                3 -> TrailerSection(videosState, context)
             }
 
             Spacer(modifier = Modifier.height(80.dp))
@@ -326,7 +334,7 @@ fun AnimatedTabs(
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit
 ) {
-    val tabs = listOf("About", "Reviews", "Cast")
+    val tabs = listOf("About", "Reviews", "Cast", "Trailer")
 
     TabRow(
         selectedTabIndex = selectedTabIndex,
@@ -563,6 +571,136 @@ fun CastMemberCard(actor: CastUi) {
 }
 
 @Composable
+fun TrailerSection(
+    videosState: UiState<List<com.example.movieapp.domain.model.MovieVideo>>,
+    context: android.content.Context
+) {
+    when (videosState) {
+        is UiState.Loading -> {
+            LoadingIndicator()
+        }
+        is UiState.Success -> {
+            val videos = videosState.data
+                .filter { it.site == "YouTube" && it.type == "Trailer" }
+                .sortedByDescending { it.isOfficial }
+
+            if (videos.isEmpty()) {
+                EmptyStateMessage("No trailers available", "🎬")
+            } else {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    videos.take(3).forEach { video ->
+                        TrailerCard(video = video, context = context)
+                    }
+                }
+            }
+        }
+        is UiState.Error -> {
+            EmptyStateMessage(videosState.message, "⚠️")
+        }
+    }
+}
+
+@Composable
+fun TrailerCard(
+    video: com.example.movieapp.domain.model.MovieVideo,
+    context: android.content.Context
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clickable {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://www.youtube.com/watch?v=${video.key}")
+                )
+                context.startActivity(intent)
+            },
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2D35)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data("https://img.youtube.com/vi/${video.key}/hqdefault.jpg")
+                    .crossfade(300)
+                    .build(),
+                contentDescription = video.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Gradient Overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f)
+                            )
+                        )
+                    )
+            )
+
+            // Play Icon
+            Surface(
+                shape = CircleShape,
+                color = Icon_color.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(56.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = android.R.drawable.ic_media_play),
+                        contentDescription = "Play",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+
+            // Video Title
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                if (video.isOfficial) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Icon_color,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = "Official",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    text = video.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun LoadingIndicator() {
     Box(
         modifier = Modifier
@@ -669,4 +807,3 @@ fun DetailsLoadingShimmer() {
         )
     }
 }
-

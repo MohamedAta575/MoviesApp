@@ -8,13 +8,16 @@ import com.example.movieapp.core.UiState
 import com.example.movieapp.domain.model.Cast
 import com.example.movieapp.domain.model.Movie
 import com.example.movieapp.domain.model.MovieReview
+import com.example.movieapp.domain.model.MovieVideo
 import com.example.movieapp.domain.usecase.GetMovieCreditsUseCase
 import com.example.movieapp.domain.usecase.GetMovieDetailsUseCase
 import com.example.movieapp.domain.usecase.GetMovieReviewsUseCase
+import com.example.movieapp.domain.usecase.GetMovieVideosUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,6 +26,7 @@ class MovieDetailsViewModel @Inject constructor(
     private val getMovieDetailsUseCase: GetMovieDetailsUseCase,
     private val getMovieCreditsUseCase: GetMovieCreditsUseCase,
     private val getMovieReviewsUseCase: GetMovieReviewsUseCase,
+    private val getMovieVideosUseCase: GetMovieVideosUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -37,6 +41,9 @@ class MovieDetailsViewModel @Inject constructor(
     private val _reviews = MutableStateFlow<UiState<List<MovieReview>>>(UiState.Loading)
     val reviews: StateFlow<UiState<List<MovieReview>>> = _reviews.asStateFlow()
 
+    private val _videos = MutableStateFlow<UiState<List<MovieVideo>>>(UiState.Loading)
+    val videos: StateFlow<UiState<List<MovieVideo>>> = _videos.asStateFlow()
+
     init {
         loadMovieDetails()
     }
@@ -45,29 +52,46 @@ class MovieDetailsViewModel @Inject constructor(
         fetchMovieDetails()
         fetchMovieCredits()
         fetchMovieReviews()
+        fetchMovieVideos()
     }
 
     private fun fetchMovieDetails() {
         viewModelScope.launch {
-            getMovieDetailsUseCase(movieId).collect { result ->
-                _movieDetails.value = result.toUiState()
-            }
+            getMovieDetailsUseCase(movieId)
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { result ->
+                    _movieDetails.value = result.toUiState()
+                }
         }
     }
 
     private fun fetchMovieCredits() {
         viewModelScope.launch {
-            getMovieCreditsUseCase(movieId).collect { result ->
-                _cast.value = result.toUiState()
-            }
+            getMovieCreditsUseCase(movieId)
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { result ->
+                    _cast.value = result.toUiState()
+                }
         }
     }
 
     private fun fetchMovieReviews() {
         viewModelScope.launch {
-            getMovieReviewsUseCase(movieId).collect { result ->
-                _reviews.value = result.toUiState()
-            }
+            getMovieReviewsUseCase(movieId)
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { result ->
+                    _reviews.value = result.toUiState()
+                }
+        }
+    }
+
+    private fun fetchMovieVideos() {
+        viewModelScope.launch {
+            getMovieVideosUseCase(movieId)
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { result ->
+                    _videos.value = result.toUiState()
+                }
         }
     }
 

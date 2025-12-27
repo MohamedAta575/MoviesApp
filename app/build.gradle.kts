@@ -107,6 +107,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 }
 hilt {
     enableAggregatingTask = true

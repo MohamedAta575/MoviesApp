@@ -8,6 +8,7 @@ import com.example.movieapp.domain.model.Movie
 import com.example.movieapp.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +22,11 @@ class MovieViewModel @Inject constructor(
     private val getTopRatedMoviesUseCase: GetTopRatedMoviesUseCase,
     private val searchMoviesUseCase: SearchMoviesUseCase
 ) : ViewModel() {
+
+    companion object {
+        private const val SEARCH_DEBOUNCE_MS = 500L
+        private const val MAX_DISPLAY_RESULTS = 18
+    }
 
     private val _nowPlaying = MutableStateFlow<UiState<List<Movie>>>(UiState.Loading)
     val nowPlaying: StateFlow<UiState<List<Movie>>> = _nowPlaying.asStateFlow()
@@ -40,6 +46,8 @@ class MovieViewModel @Inject constructor(
     private val _searchResults = MutableStateFlow<UiState<List<Movie>>>(UiState.Success(emptyList()))
     val searchResults: StateFlow<UiState<List<Movie>>> = _searchResults.asStateFlow()
 
+    private var searchJob: Job? = null
+
     init {
         loadAllMovies()
         setupSearch()
@@ -48,15 +56,32 @@ class MovieViewModel @Inject constructor(
     private fun setupSearch() {
         viewModelScope.launch {
             searchQuery
-                .debounce(300)
+                .debounce(SEARCH_DEBOUNCE_MS)
                 .distinctUntilChanged()
                 .collectLatest { query ->
-                    if (query.isBlank()) {
-                        _searchResults.value = UiState.Success(emptyList())
-                    } else {
-                        performSearch(query)
+                    try {
+                        handleSearchQuery(query.trim())
+                    } catch (e: Exception) {
+                        _searchResults.value = UiState.Error("Search failed")
                     }
                 }
+        }
+    }
+
+    private suspend fun handleSearchQuery(query: String) {
+        searchJob?.cancel()
+
+        if (query.isBlank()) {
+            _searchResults.value = UiState.Success(emptyList())
+            return
+        }
+
+        searchJob = viewModelScope.launch {
+            try {
+                performSearch(query)
+            } catch (e: Exception) {
+                _searchResults.value = UiState.Error("Search failed")
+            }
         }
     }
 
@@ -65,40 +90,63 @@ class MovieViewModel @Inject constructor(
     }
 
     private suspend fun performSearch(query: String) {
-        // Local search first
-        val allMovies = listOfNotNull(
-            (_nowPlaying.value as? UiState.Success)?.data,
-            (_upcoming.value as? UiState.Success)?.data,
-            (_topRated.value as? UiState.Success)?.data,
-            (_popular.value as? UiState.Success)?.data
-        ).flatten()
+        _searchResults.value = UiState.Loading
 
-        val localResults = allMovies.filter {
-            it.title.contains(query, ignoreCase = true)
-        }
-
+        val localResults = safeSearchLocal(query)
         if (localResults.isNotEmpty()) {
-            _searchResults.value = UiState.Success(localResults)
-        } else {
-            _searchResults.value = UiState.Loading
+            _searchResults.value = UiState.Success(localResults.take(MAX_DISPLAY_RESULTS))
         }
 
-        // API search
-        searchMoviesUseCase(query).collect { result ->
-            _searchResults.value = when (result) {
-                is Result.Loading -> {
-                    if (localResults.isEmpty()) UiState.Loading
-                    else UiState.Success(localResults)
+        searchMoviesUseCase(query)
+            .catch { e ->
+                if (localResults.isNotEmpty()) {
+                    emit(Result.Success(localResults))
+                } else {
+                    emit(Result.Error(Exception("Search failed")))
                 }
-                is Result.Success -> UiState.Success(result.data)
-                is Result.Error -> {
-                    if (localResults.isNotEmpty()) {
-                        UiState.Success(localResults)
-                    } else {
-                        UiState.Error(result.exception.message ?: "Search failed")
+            }
+            .collect { result ->
+                when (result) {
+                    is Result.Loading -> {
+                        if (localResults.isEmpty()) {
+                            _searchResults.value = UiState.Loading
+                        }
+                    }
+                    is Result.Success -> {
+                        val apiResults = result.data.take(MAX_DISPLAY_RESULTS)
+                        _searchResults.value = UiState.Success(apiResults)
+                    }
+                    is Result.Error -> {
+                        if (localResults.isNotEmpty()) {
+                            _searchResults.value = UiState.Success(localResults.take(MAX_DISPLAY_RESULTS))
+                        } else {
+                            _searchResults.value = UiState.Error("No results found")
+                        }
                     }
                 }
             }
+    }
+
+    private fun safeSearchLocal(query: String): List<Movie> {
+        return try {
+            val movies = mutableListOf<Movie>()
+
+            (_nowPlaying.value as? UiState.Success)?.data?.let { movies.addAll(it) }
+            (_upcoming.value as? UiState.Success)?.data?.let { movies.addAll(it) }
+            (_topRated.value as? UiState.Success)?.data?.let { movies.addAll(it) }
+            (_popular.value as? UiState.Success)?.data?.let { movies.addAll(it) }
+
+            if (movies.isEmpty()) return emptyList()
+
+            movies.asSequence()
+                .filter {
+                    it.title.contains(query, ignoreCase = true) ||
+                            it.overview?.contains(query, ignoreCase = true) == true
+                }
+                .distinctBy { it.id }
+                .toList()
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
@@ -111,33 +159,33 @@ class MovieViewModel @Inject constructor(
 
     private fun loadNowPlaying() {
         viewModelScope.launch {
-            getNowPlayingMoviesUseCase().collect { result ->
-                _nowPlaying.value = result.toUiState()
-            }
+            getNowPlayingMoviesUseCase()
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { _nowPlaying.value = it.toUiState() }
         }
     }
 
     private fun loadUpcoming() {
         viewModelScope.launch {
-            getUpcomingMoviesUseCase().collect { result ->
-                _upcoming.value = result.toUiState()
-            }
+            getUpcomingMoviesUseCase()
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { _upcoming.value = it.toUiState() }
         }
     }
 
     private fun loadTopRated() {
         viewModelScope.launch {
-            getTopRatedMoviesUseCase().collect { result ->
-                _topRated.value = result.toUiState()
-            }
+            getTopRatedMoviesUseCase()
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { _topRated.value = it.toUiState() }
         }
     }
 
     private fun loadPopular() {
         viewModelScope.launch {
-            getPopularMoviesUseCase().collect { result ->
-                _popular.value = result.toUiState()
-            }
+            getPopularMoviesUseCase()
+                .catch { e -> emit(Result.Error(Exception(e))) }
+                .collect { _popular.value = it.toUiState() }
         }
     }
 
@@ -146,13 +194,23 @@ class MovieViewModel @Inject constructor(
     }
 
     fun clearSearchResults() {
-        _searchQuery.value = ""
-        _searchResults.value = UiState.Success(emptyList())
+        try {
+            searchJob?.cancel()
+            _searchQuery.value = ""
+            _searchResults.value = UiState.Success(emptyList())
+        } catch (e: Exception) {
+            // Handle silently
+        }
     }
 
     private fun <T> Result<T>.toUiState(): UiState<T> = when (this) {
         is Result.Loading -> UiState.Loading
         is Result.Success -> UiState.Success(data)
         is Result.Error -> UiState.Error(exception.message ?: "Error occurred")
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        searchJob?.cancel()
     }
 }

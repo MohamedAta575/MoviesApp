@@ -4,6 +4,7 @@ import com.example.movieapp.core.Result
 import com.example.movieapp.domain.model.Cast
 import com.example.movieapp.domain.model.Movie
 import com.example.movieapp.domain.model.MovieReview
+import com.example.movieapp.domain.model.MovieVideo
 import kotlinx.coroutines.flow.Flow
 
 interface IMovieRepository {
@@ -15,4 +16,6 @@ interface IMovieRepository {
     fun getMovieDetails(movieId: Int): Flow<Result<Movie>>
     fun getMovieCredits(movieId: Int): Flow<Result<List<Cast>>>
     fun getMovieReviews(movieId: Int): Flow<Result<List<MovieReview>>>
+    fun getMovieVideos(movieId: Int): Flow<Result<List<MovieVideo>>>
+
 }

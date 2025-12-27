@@ -4,6 +4,7 @@ import com.example.movieapp.domain.model.BookmarkedMovie
 import com.example.movieapp.domain.model.Cast
 import com.example.movieapp.domain.model.Movie
 import com.example.movieapp.domain.model.MovieReview
+import com.example.movieapp.domain.model.MovieVideo
 
 // ========== Domain to Presentation ==========
 
@@ -130,5 +131,22 @@ fun BookmarkedMovieUi.toDomain(): BookmarkedMovie {
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate,
         runtime = this.runtime
+    )
+}
+data class VideoUi(
+    val id: String,
+    val key: String,
+    val name: String,
+    val thumbnailUrl: String,
+    val youtubeUrl: String
+)
+
+fun MovieVideo.toUi(): VideoUi {
+    return VideoUi(
+        id = id,
+        key = key,
+        name = name,
+        thumbnailUrl = "https://img.youtube.com/vi/$key/hqdefault.jpg",
+        youtubeUrl = "https://www.youtube.com/watch?v=$key"
     )
 }
